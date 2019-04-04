@@ -1,9 +1,19 @@
 #!/bin/sh
 set -eu
 
-EMPTY_COMMIT="$(git hash-object -t tree /dev/null)"
-readonly EMPTY_COMMIT
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=$(git hash-object -t tree /dev/null)
+fi
+readonly against
 
 # Report errors based on git configuration.
 # Respect overrides in .gitattributes if present.
-git diff-index --check "${EMPTY_COMMIT}"
+# Note that this uses git-diff-index instead of git-diff because only
+# the former is a "plumbing" command, and thus meant to be used in
+# scripts.  See also Git mailing list thread at
+# https://marc.info/?l=git&m=152778485604708&w=2.
+git diff-index --check --cached "$against" --
